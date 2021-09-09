@@ -1,5 +1,20 @@
 import { describe, test, expect, jest } from "@jest/globals";
 import Routes from "../../src/routes.js";
+const defaultParams = {
+  request: {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+    method: "",
+    body: {},
+  },
+  response: {
+    setHeader: jest.fn(),
+    writeHead: jest.fn(),
+    end: jest.fn(),
+  },
+  values: () => Object.values(defaultParams),
+};
 
 describe("#Routes suite test", () => {
   describe("#setSocketInstance", () => {
@@ -15,21 +30,6 @@ describe("#Routes suite test", () => {
     });
   });
   describe("#handler", () => {
-    const defaultParams = {
-      request: {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        method: "",
-        body: {},
-      },
-      response: {
-        setHeader: jest.fn(),
-        writeHead: jest.fn(),
-        end: jest.fn(),
-      },
-      values: () => Object.values(defaultParams),
-    };
     test("given an inexistent route it should choose default route", async () => {
       const routes = new Routes();
       const params = {
@@ -90,6 +90,30 @@ describe("#Routes suite test", () => {
   });
 
   describe("#get", () => {
-    test.skip("given method GET it should list all files downloaded", () => {});
+    test("given method GET it should list all files downloaded", async () => {
+      const routes = new Routes();
+      const params = {
+        ...defaultParams,
+      };
+      const filesStatusesMock = [
+        {
+          size: "182 kB",
+          lastModified: "2021-09-08T19:45:59.455Z",
+          owner: "luccas",
+          file: "teste.png",
+        },
+      ];
+      jest
+        .spyOn(routes.fileHelper, routes.fileHelper.getFilesStatus.name)
+        .mockResolvedValue(filesStatusesMock);
+
+      params.request.method = "GET";
+      await routes.handler(...params.values());
+
+      expect(params.response.writeHead).toHaveBeenCalledWith(200);
+      expect(params.response.end).toHaveBeenCalledWith(
+        JSON.stringify(filesStatusesMock)
+      );
+    });
   });
 });
